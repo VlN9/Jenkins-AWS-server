@@ -31,5 +31,8 @@
   - name: starting Jenkins
     shell: systemctl enable jenkins && systemctl start jenkins
 
+  - name: creating .ssh directory
+    shell: mkdir /var/lib/jenkins/.ssh/
+
   - name: Copy key
-    copy: src=/home/vladimir/client_key-ca-central-1.pem dest=/home/ec2-user/client_key-ca-central-1.pem
+    copy: src=/home/vladimir/client_key-ca-central-1.pem dest=/var/lib/jenkins/.ssh/client_key-ca-central-1.pem mode=0400

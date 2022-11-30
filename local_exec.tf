@@ -1,6 +1,6 @@
 resource "null_resource" "add_hosts" {
   provisioner "local-exec" {
-    command = "echo ${aws_instance.jen_server.public_ip} >> /home/vladimir/Projects/terraform-project/ansible/hosts.txt"
+    command = "echo \"[prod_servers]\n${aws_instance.jen_server.public_ip}\" > ./hosts.txt"
   }
   depends_on = [
     aws_instance.jen_server
@@ -18,7 +18,7 @@ resource "null_resource" "activate-ansible" {
 
 resource "null_resource" "jenkins_password" {
   provisioner "local-exec" {
-    command = "sleep 3 && ansible prod_servers -m shell -a \"cat /var/lib/jenkins/secrets/initialAdminPassword\" -b"
+    command = "sleep 2 && ansible prod_servers -m shell -a \"cat /var/lib/jenkins/secrets/initialAdminPassword\" -b"
   }
   depends_on = [
     aws_instance.jen_server,
