@@ -15,7 +15,7 @@ provider "aws" {
 terraform {
   backend "s3" {
     bucket = "vln-project-terraforrm-state"
-    key    = "wagtail/server/terraform.tfstate"
+    key    = "wagtail/jekins/terraform.tfstate"
     region = "ca-central-1"
   }
 }

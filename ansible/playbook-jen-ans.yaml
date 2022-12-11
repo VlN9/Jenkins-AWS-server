@@ -34,5 +34,29 @@
   - name: creating .ssh directory
     shell: mkdir /var/lib/jenkins/.ssh/
 
-  - name: Copy key
+  - name: Copy key for remote server
     copy: src=/home/vladimir/client_key-ca-central-1.pem dest=/var/lib/jenkins/.ssh/client_key-ca-central-1.pem mode=0400
+
+  - name: chown for key for remote server
+    shell: chown jenkins:jenkins /var/lib/jenkins/.ssh/client_key-ca-central-1.pem
+
+  - name: Copy private key for git
+    copy: src=/home/vladimir/.ssh/id_rsa dest=/var/lib/jenkins/.ssh/id_rsa mode=0400
+
+  - name: Copy public key for git
+    copy: src=/home/vladimir/.ssh/id_rsa.pub dest=/var/lib/jenkins/.ssh/id_rsa.pub mode=0400
+
+  - name: Chown for git keys
+    shell: chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rs*
+
+  - name: Installing config-manager
+    yum: name=yum-utils state=latest
+
+  - name: Adding repo
+    shell: yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+
+  - name: Installing Terraform
+    yum: name=terraform state=latest
+
+  - name: Installing Git
+    yum: name=git state=latest
