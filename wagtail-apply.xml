@@ -1,0 +1,76 @@
+<?xml version='1.1' encoding='UTF-8'?>
+<project>
+  <actions/>
+  <description></description>
+  <keepDependencies>false</keepDependencies>
+  <properties>
+    <hudson.model.ParametersDefinitionProperty>
+      <parameterDefinitions>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>ActionDB</name>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>show</string>
+              <string>apply -auto-approve</string>
+              <string>destroy -auto-approve</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>ActionInfra</name>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>apply -auto-approve</string>
+              <string>destroy -auto-approve</string>
+              <string>show</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+      </parameterDefinitions>
+    </hudson.model.ParametersDefinitionProperty>
+  </properties>
+  <scm class="hudson.plugins.git.GitSCM" plugin="git@4.14.3">
+    <configVersion>2</configVersion>
+    <userRemoteConfigs>
+      <hudson.plugins.git.UserRemoteConfig>
+        <url>git@github.com:VlN9/Wagtail-AWS-terraform.git</url>
+        <credentialsId>ssh-git-key-id</credentialsId>
+      </hudson.plugins.git.UserRemoteConfig>
+    </userRemoteConfigs>
+    <branches>
+      <hudson.plugins.git.BranchSpec>
+        <name>*/master</name>
+      </hudson.plugins.git.BranchSpec>
+    </branches>
+    <doGenerateSubmoduleConfigurations>false</doGenerateSubmoduleConfigurations>
+    <submoduleCfg class="empty-list"/>
+    <extensions/>
+  </scm>
+  <canRoam>true</canRoam>
+  <disabled>false</disabled>
+  <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
+  <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
+  <triggers/>
+  <concurrentBuild>false</concurrentBuild>
+  <builders>
+    <hudson.tasks.Shell>
+      <command>dbaction = terraform -chdir=wagtail_db init &amp;&amp; terraform -chdir=wagtail_db $ActionDB
+infraaction = terraform -chdir=ec2_server init &amp;&amp; terraform -chdir=ec2_server $ActionInfra -var-file=&quot;prod.tfvars&quot;
+
+if [ $ActionDB == &quot;apply -auto-approve&quot; ]
+then
+	$dbaction
+	$infraaction
+else
+	$infraaction
+    $dbaction
+fi
+    
+	
+</command>
+      <configuredLocalRules/>
+    </hudson.tasks.Shell>
+  </builders>
+  <publishers/>
+  <buildWrappers/>
+</project>

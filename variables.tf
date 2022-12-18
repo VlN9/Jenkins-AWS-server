@@ -1,7 +1,7 @@
 variable "aws_region" {
   description = "AWS region to deploy"
-  type = string
-  default = "ca-central-1"
+  type        = string
+  default     = "ca-central-1"
 }
 
 variable "sg_cidr_rule" {
@@ -21,32 +21,32 @@ variable "sg_cidr_rule" {
 
 variable "sg_self_rule" {
   description = "list of parametres for server's security group ingress and egress rules. for group itself"
-  type = list(any)
-  default = []
+  type        = list(any)
+  default     = []
 }
 
 variable "sg_another_group_rule" {
   description = "list of parametres for server's security group ingress and egress rules. For connection security group to another"
-  type    = list(any)
-  default = []
+  type        = list(any)
+  default     = []
 }
 
 variable "server_counter" {
   description = "Number of servers"
-  type = number
-  default = 1
+  type        = number
+  default     = 1
 }
 
 variable "instance_type" {
   description = "Type of instances"
-  type = string
-  default = "t2.micro"
+  type        = string
+  default     = "t2.micro"
 }
 
 variable "key_pair_name" {
   description = "Name of key pair for SSH"
-  type = string
-  default = "vln-key-ca-central-1"
+  type        = string
+  default     = "vln-key-ca-central-1"
 }
 
 variable "common_tags" {
@@ -57,4 +57,26 @@ variable "common_tags" {
     Project     = "Jenkins"
     Environment = "prod"
   }
+}
+
+variable "healthy_threshold" {
+  description = "number of checks for healthy state"
+  type        = number
+  default     = 4
+}
+
+variable "unhealthy_threshold" {
+  description = "number of checks for unhealthy state"
+  type        = number
+  default     = 2
+}
+
+variable "health_check_timeout" {
+  type    = number
+  default = 2
+}
+
+variable "health_check_interval" {
+  type    = number
+  default = 5
 }

@@ -3,12 +3,13 @@ resource "aws_instance" "jen_server" {
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.jen_sg.id]
   key_name               = data.aws_key_pair.jen_key.key_name
+  iam_instance_profile   = aws_iam_instance_profile.jen_profile.name
 
   tags = {
-  Name        = "Jenkins-Server"
-  Project     = var.common_tags["Project"]
-  Owner       = var.common_tags["Owner"]
-  Environment = var.common_tags["Environment"]
+    Name        = "Jenkins-Server"
+    Project     = var.common_tags["Project"]
+    Owner       = var.common_tags["Owner"]
+    Environment = var.common_tags["Environment"]
   }
 }
 
@@ -19,7 +20,7 @@ resource "aws_security_group" "jen_sg" {
 
 
 resource "aws_security_group_rule" "cidr_rule_for_jen_sg" {
-  count             = length(var.sg_cidr_rule) 
+  count             = length(var.sg_cidr_rule)
   description       = element(var.sg_cidr_rule, count.index)["description"]
   type              = element(var.sg_cidr_rule, count.index)["type"]
   from_port         = element(var.sg_cidr_rule, count.index)["from_port"]

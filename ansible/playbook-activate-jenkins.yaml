@@ -1,43 +1,44 @@
 - name: Activate Jenkins
   hosts: prod_servers
   become: yes
-  
-  vars:
-    jenkins_ip: " "
 
   tasks:
   - name: read admin pwd
     shell: cat /var/lib/jenkins/secrets/initialAdminPassword
     register: adminpwd
 
+  - name: read ssh key
+    shell: cat /var/lib/jenkins/.ssh/id_rsa
+    register: private_key
+
   - name: unlock and add admin user
     jenkins_script:
-     script: |
-      import jenkins.model.*
-      import hudson.security.*
-      def instance = Jenkins.getInstance()
-      def hudsonRealm = new HudsonPrivateSecurityRealm(false)
-      hudsonRealm.createAccount('jenkins', '${user_pwd}')
-      instance.setSecurityRealm(hudsonRealm)
-      def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
-      strategy.setAllowAnonymousRead(false)
-      instance.setAuthorizationStrategy(strategy)
-      instance.save()
-     args:
-      user_pwd: "123"
-     user: admin
-     password: "{{ adminpwd.stdout }}"
+      script: |
+        import jenkins.model.*
+        import hudson.security.*
+        def instance = Jenkins.getInstance()
+        def hudsonRealm = new HudsonPrivateSecurityRealm(false)
+        hudsonRealm.createAccount('jenkins', '${user_pwd}')
+        instance.setSecurityRealm(hudsonRealm)
+        def strategy = new FullControlOnceLoggedInAuthorizationStrategy()
+        strategy.setAllowAnonymousRead(false)
+        instance.setAuthorizationStrategy(strategy)
+        instance.save()
+      args:
+        user_pwd: "123"
+      user: admin
+      password: "{{ adminpwd.stdout }}"
 
   - name: complete setup wizard
     jenkins_script:
-     script: |
-      import static jenkins.model.Jenkins.instance as jenkins
-      import jenkins.install.InstallState
-      if (!jenkins.installState.isSetupComplete()) {
-        InstallState.INITIAL_SETUP_COMPLETED.initializeState()
-      }
-     user: admin
-     password: "{{ adminpwd.stdout }}"
+      script: |
+        import static jenkins.model.Jenkins.instance as jenkins
+        import jenkins.install.InstallState
+        if (!jenkins.installState.isSetupComplete()) {
+          InstallState.INITIAL_SETUP_COMPLETED.initializeState()
+        }
+      user: admin
+      password: "{{ adminpwd.stdout }}"
 
   - name: install plugin
     jenkins_plugin:
@@ -136,24 +137,46 @@
     - "email-ext"
     - "locale"
 
+  - name: restart jenkins
+    systemd: name=jenkins state=restarted
+
+  - name: create credentials for git
+    jenkins_script:
+      script: |
+        import jenkins.model.Jenkins
+        import com.cloudbees.plugins.credentials.domains.Domain
+        import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey
+        import com.cloudbees.plugins.credentials.CredentialsScope
+
+        instance = Jenkins.instance
+        domain = Domain.global()
+        store = instance.getExtensionList(
+          "com.cloudbees.plugins.credentials.SystemCredentialsProvider")[0].getStore()
+
+        privateKey = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource("""${private_key}""")
+
+        sshKey = new BasicSSHUserPrivateKey(
+          CredentialsScope.GLOBAL,
+          "ssh-git-key-id",
+          "VlN9",
+          privateKey,
+          null,
+          "ssh-key-for-git"
+        )
+
+        store.addCredentials(domain, sshKey)
+      args:
+        private_key: "{{ private_key.stdout }}"
+      user: admin
+      password: "{{ adminpwd.stdout }}"
+
   - name: install lib
     shell: easy_install python-jenkins
 
   - name: create job for deploy wagtail infra
     jenkins_job:
-      config: "{{ lookup('file', '/home/vladimir/wagtail-apply.xml') }}"
-      name: Wagtail-apply
+      config: "{{ lookup('file', '/home/vlad/project/Jenkins-AWS-server/wagtail-apply.xml') }}"
+      name: Wagtail-provision-infra
       password: "123"
       url: http://{{ jenkins_ip }}:8080
       user: jenkins
-
-  - name: create job for destroy wagtail infra
-    jenkins_job:
-      config: "{{ lookup('file', '/home/vladimir/wagtail-destroy.xml') }}"
-      name: Wagtail-destroy
-      password: "123"
-      url: http://{{ jenkins_ip }}:8080
-      user: jenkins
-
-  - name: restart jenkins
-    systemd: name=jenkins state=restarted  

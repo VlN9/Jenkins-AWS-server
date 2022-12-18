@@ -5,13 +5,21 @@ sg_cidr_rule = [
     from_port   = 22
     to_port     = 22
     protocol    = "tcp"
-    cidr_blocks = ["93.175.223.50/32"]
+    cidr_blocks = ["0.0.0.0/0"]
   },
   {
-    description = "HTTP ingress rule for me"
+    description = "HTTP ingress rule for internet"
     type        = "ingress"
     from_port   = 8080
     to_port     = 8080
+    protocol    = "tcp"
+    cidr_blocks = ["0.0.0.0/0"]
+  },
+  {
+    description = "HTTP ingress rule for listener"
+    type        = "ingress"
+    from_port   = 80
+    to_port     = 80
     protocol    = "tcp"
     cidr_blocks = ["0.0.0.0/0"]
   },

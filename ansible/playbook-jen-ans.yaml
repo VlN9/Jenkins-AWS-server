@@ -15,15 +15,11 @@
   - name: Another Preparing
     shell: rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key
 
-#    shell: wget -O /etc/yum.repos.d/jenkins.repo https://pkg.jenkins.io/redhat/jenkins.repo && rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key
-
   - name: Upgrade repo
     yum: name=* state=latest
 
   - name: Java Installation
     shell: amazon-linux-extras install -y java-openjdk11
-
-#    yum: name=java-11-openjdk state=present
 
   - name: Jenkins Installation
     yum: name=jenkins state=latest
@@ -35,19 +31,22 @@
     shell: mkdir /var/lib/jenkins/.ssh/
 
   - name: Copy key for remote server
-    copy: src=/home/vladimir/client_key-ca-central-1.pem dest=/var/lib/jenkins/.ssh/client_key-ca-central-1.pem mode=0400
+    copy: src=/home/vlad/.ssh/client_key-ca-central-1.pem dest=/home/ec2-user/.ssh/client_key-ca-central-1.pem mode=0400
 
   - name: chown for key for remote server
-    shell: chown jenkins:jenkins /var/lib/jenkins/.ssh/client_key-ca-central-1.pem
+    shell: chown ec2-user:ec2-user /home/ec2-user/.ssh/client_key-ca-central-1.pem
 
   - name: Copy private key for git
-    copy: src=/home/vladimir/.ssh/id_rsa dest=/var/lib/jenkins/.ssh/id_rsa mode=0400
+    copy: src=/home/vlad/.ssh/id_rsa dest=/var/lib/jenkins/.ssh/id_rsa mode=0400
 
   - name: Copy public key for git
-    copy: src=/home/vladimir/.ssh/id_rsa.pub dest=/var/lib/jenkins/.ssh/id_rsa.pub mode=0400
+    copy: src=/home/vlad/.ssh/id_rsa.pub dest=/var/lib/jenkins/.ssh/id_rsa.pub mode=0400
+
+  - name: create known_hosts file
+    shell: echo "github.com,140.82.114.4 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg= " > /var/lib/jenkins/.ssh/known_hosts
 
   - name: Chown for git keys
-    shell: chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rs*
+    shell: chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rs* /var/lib/jenkins/.ssh/known_hosts
 
   - name: Installing config-manager
     yum: name=yum-utils state=latest

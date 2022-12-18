@@ -10,3 +10,12 @@ data "aws_ami" "latest_amazon_linux" {
 data "aws_key_pair" "jen_key" {
   key_name = var.key_pair_name
 }
+
+data "aws_subnets" "default" {}
+
+data "aws_vpc" "default" {}
+
+data "aws_route53_zone" "vln" {
+  name         = "vln.ink"
+  private_zone = false
+}
