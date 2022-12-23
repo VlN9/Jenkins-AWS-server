@@ -1,61 +1,79 @@
 - name: Install Jenkins and Ansible
-  hosts: prod_servers
+  hosts: all
   become: yes
 
   tasks:
-  - name: Epel Installation
-    shell: amazon-linux-extras enable ansible2
-
-  - name: Ansible Installation
-    yum: name=ansible state=latest
-
-  - name: Prepareing for Jenkins Installation
-    get_url: url=https://pkg.jenkins.io/redhat/jenkins.repo dest=/etc/yum.repos.d/jenkins.repo
-
-  - name: Another Preparing
-    shell: rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key
-
-  - name: Upgrade repo
-    yum: name=* state=latest
-
+          #==========Configure for all Servers==========#
   - name: Java Installation
     shell: amazon-linux-extras install -y java-openjdk11
 
-  - name: Jenkins Installation
-    yum: name=jenkins state=latest
-
-  - name: starting Jenkins
-    shell: systemctl enable jenkins && systemctl start jenkins
-
-  - name: creating .ssh directory
-    shell: mkdir /var/lib/jenkins/.ssh/
-
-  - name: Copy key for remote server
-    copy: src=/home/vlad/.ssh/client_key-ca-central-1.pem dest=/home/ec2-user/.ssh/client_key-ca-central-1.pem mode=0400
-
-  - name: chown for key for remote server
-    shell: chown ec2-user:ec2-user /home/ec2-user/.ssh/client_key-ca-central-1.pem
-
-  - name: Copy private key for git
-    copy: src=/home/vlad/.ssh/id_rsa dest=/var/lib/jenkins/.ssh/id_rsa mode=0400
-
-  - name: Copy public key for git
-    copy: src=/home/vlad/.ssh/id_rsa.pub dest=/var/lib/jenkins/.ssh/id_rsa.pub mode=0400
-
-  - name: create known_hosts file
-    shell: echo "github.com,140.82.114.4 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg= " > /var/lib/jenkins/.ssh/known_hosts
-
-  - name: Chown for git keys
-    shell: chown jenkins:jenkins /var/lib/jenkins/.ssh/id_rs* /var/lib/jenkins/.ssh/known_hosts
-
-  - name: Installing config-manager
-    yum: name=yum-utils state=latest
-
-  - name: Adding repo
-    shell: yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
-
-  - name: Installing Terraform
-    yum: name=terraform state=latest
-
   - name: Installing Git
     yum: name=git state=latest
+  
+  - block: #==========Master Configuring==========#
+      - name: Prepareing for Jenkins Installation
+        get_url: url=https://pkg.jenkins.io/redhat/jenkins.repo dest=/etc/yum.repos.d/jenkins.repo
+
+      - name: Another Preparing
+        shell: rpm --import https://pkg.jenkins.io/redhat/jenkins.io.key
+
+      - name: Upgrade repo
+        yum: name=* state=latest
+  
+      - name: Jenkins Installation
+        yum: name=jenkins state=latest
+  
+      - name: starting Jenkins
+        shell: systemctl enable jenkins && systemctl start jenkins
+
+      - name: create .ssh directory
+        file:
+          path: /var/lib/jenkins/.ssh
+          state: directory
+        become: true
+        become_user: jenkins
+
+      - name: Copy key for slave server
+        copy: src=/home/vlad/.ssh/slave-ca-central-1.pem dest=/var/lib/jenkins/.ssh/slave-ca-central-1.pem mode=0600
+        become: true
+        become_user: jenkins
+
+      - name: create known_hosts file
+        shell: echo "github.com,140.82.114.4 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg= " > /var/lib/jenkins/.ssh/known_hosts
+        become: true
+        become_user: jenkins
+
+    delegate_to: "{{ groups['master_server'][0] }}"
+
+  - block: #==========Slaves Configuring==========#
+      - name: Epel Installation
+        shell: amazon-linux-extras enable ansible2
+
+      - name: Ansible Installation
+        yum: name=ansible state=latest
+
+      - name: Installing config-manager
+        yum: name=yum-utils state=latest
+
+      - name: Adding repo
+        shell: yum-config-manager --add-repo https://rpm.releases.hashicorp.com/AmazonLinux/hashicorp.repo
+
+      - name: Installing Terraform
+        yum: name=terraform state=latest
+
+      - name: create known_hosts file
+        shell: echo "github.com,140.82.114.4 ecdsa-sha2-nistp256 AAAAE2VjZHNhLXNoYTItbmlzdHAyNTYAAAAIbmlzdHAyNTYAAABBBEmKSENjQEezOmxkZMy7opKgwFB9nkt5YRrYMjNuG5N87uRgg6CLrbo5wAdT/y6v0mKV0U2w0WZ2YB/++Tpockg= " > /home/ec2-user/.ssh/known_hosts
+        become: true
+        become_user: ec2-user
+
+      - name: Copy private key for git
+        copy: src=/home/vlad/.ssh/id_rsa dest=/home/ec2-user/.ssh/id_rsa mode=0600
+        become: true
+        become_user: ec2-user
+
+      - name: Copy key for remote server
+        copy: src=/home/vlad/.ssh/client_key-ca-central-1.pem dest=/home/ec2-user/.ssh/client_key-ca-central-1.pem mode=0600
+        become: true
+        become_user: ec2-user
+    delegate_to: "{{ groups['slave_server'][0] }}"
+

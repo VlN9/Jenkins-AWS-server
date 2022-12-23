@@ -11,6 +11,10 @@ data "aws_key_pair" "jen_key" {
   key_name = var.key_pair_name
 }
 
+data "aws_key_pair" "slave_key" {
+  key_name = "slave-ca-central-1"
+}
+
 data "aws_subnets" "default" {}
 
 data "aws_vpc" "default" {}

@@ -10,7 +10,7 @@
           <name>ActionDB</name>
           <choices class="java.util.Arrays$ArrayList">
             <a class="string-array">
-              <string>show</string>
+              <string>none</string>
               <string>apply -auto-approve</string>
               <string>destroy -auto-approve</string>
             </a>
@@ -22,7 +22,16 @@
             <a class="string-array">
               <string>apply -auto-approve</string>
               <string>destroy -auto-approve</string>
-              <string>show</string>
+              <string>none</string>
+            </a>
+          </choices>
+        </hudson.model.ChoiceParameterDefinition>
+        <hudson.model.ChoiceParameterDefinition>
+          <name>Provision_app</name>
+          <choices class="java.util.Arrays$ArrayList">
+            <a class="string-array">
+              <string>true</string>
+              <string>false</string>
             </a>
           </choices>
         </hudson.model.ChoiceParameterDefinition>
@@ -46,7 +55,8 @@
     <submoduleCfg class="empty-list"/>
     <extensions/>
   </scm>
-  <canRoam>true</canRoam>
+  <assignedNode>wagtail-node</assignedNode>
+  <canRoam>false</canRoam>
   <disabled>false</disabled>
   <blockBuildWhenDownstreamBuilding>false</blockBuildWhenDownstreamBuilding>
   <blockBuildWhenUpstreamBuilding>false</blockBuildWhenUpstreamBuilding>
@@ -54,20 +64,27 @@
   <concurrentBuild>false</concurrentBuild>
   <builders>
     <hudson.tasks.Shell>
-      <command>dbaction = terraform -chdir=wagtail_db init &amp;&amp; terraform -chdir=wagtail_db $ActionDB
-infraaction = terraform -chdir=ec2_server init &amp;&amp; terraform -chdir=ec2_server $ActionInfra -var-file=&quot;prod.tfvars&quot;
-
-if [ $ActionDB == &quot;apply -auto-approve&quot; ]
-then
-	$dbaction
-	$infraaction
-else
-	$infraaction
-    $dbaction
+      <command>if [ &quot;$ActionInfra&quot; != &quot;none&quot; ]; then
+  if [ &quot;$ActionDB&quot; == &quot;apply -auto-approve&quot; ];then
+      terraform -chdir=wagtail_db init &amp;&amp; terraform -chdir=wagtail_db $ActionDB
+      terraform -chdir=ec2_server init &amp;&amp; terraform -chdir=ec2_server $ActionInfra -var-file=&quot;prod.tfvars&quot;
+  elif [ &quot;$ActionDB&quot; == &quot;destroy -auto-approve&quot; ]; then
+      terraform -chdir=ec2_server init &amp;&amp; terraform -chdir=ec2_server $ActionInfra -var-file=&quot;prod.tfvars&quot;
+      terraform -chdir=wagtail_db init &amp;&amp; terraform -chdir=wagtail_db $ActionDB
+  else
+  	  terraform -chdir=ec2_server init &amp;&amp; terraform -chdir=ec2_server $ActionInfra -var-file=&quot;prod.tfvars&quot;
+  fi
 fi
-    
-	
+if [ &quot;$ActionInfra&quot; == &quot;none&quot; ] &amp;&amp; [ &quot;$ActionDB&quot; != &quot;none&quot; ]; then
+	terraform -chdir=wagtail_db init &amp;&amp; terraform -chdir=wagtail_db $ActionDB
+fi
 </command>
+      <configuredLocalRules/>
+    </hudson.tasks.Shell>
+    <hudson.tasks.Shell>
+      <command>if [ &quot;$Provision_app&quot; == &quot;true&quot; ]; then
+	cd ec2_server &amp;&amp; ansible-playbook ansible/playbook-prov-app.yaml
+fi</command>
       <configuredLocalRules/>
     </hudson.tasks.Shell>
   </builders>

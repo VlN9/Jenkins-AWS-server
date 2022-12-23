@@ -1,5 +1,5 @@
 - name: Activate Jenkins
-  hosts: prod_servers
+  hosts: master_server
   become: yes
 
   tasks:
@@ -7,9 +7,23 @@
     shell: cat /var/lib/jenkins/secrets/initialAdminPassword
     register: adminpwd
 
-  - name: read ssh key
-    shell: cat /var/lib/jenkins/.ssh/id_rsa
+  - name: read ssh key for git
+    shell: cat /home/vlad/.ssh/id_rsa
     register: private_key
+    delegate_to: 127.0.0.1
+    become: true
+    become_user: vlad
+
+  - name: read ssh key for slave
+    shell: cat /var/lib/jenkins/.ssh/slave-ca-central-1.pem
+    register: slave_key
+
+  - name: read slave ip
+    shell: cat /home/vlad/project/Jenkins-AWS-server/ansible/prvt_ip
+    register: slave_ip
+    delegate_to: 127.0.0.1
+    become: true
+    become_user: vlad
 
   - name: unlock and add admin user
     jenkins_script:
@@ -170,13 +184,77 @@
       user: admin
       password: "{{ adminpwd.stdout }}"
 
+  - name: create credentials for slave node
+    jenkins_script:
+      script: |
+        import jenkins.model.Jenkins
+        import com.cloudbees.plugins.credentials.domains.Domain
+        import com.cloudbees.jenkins.plugins.sshcredentials.impl.BasicSSHUserPrivateKey
+        import com.cloudbees.plugins.credentials.CredentialsScope
+
+        instance = Jenkins.instance
+        domain = Domain.global()
+        store = instance.getExtensionList(
+          "com.cloudbees.plugins.credentials.SystemCredentialsProvider")[0].getStore()
+
+        privateKey = new BasicSSHUserPrivateKey.DirectEntryPrivateKeySource("""${private_key}""")
+
+        sshKey = new BasicSSHUserPrivateKey(
+          CredentialsScope.GLOBAL,
+          "slave-ssh-key-id",
+          "ec2-user",
+          privateKey,
+          null,
+          "ssh-key-for-jenkins-slave"
+        )
+
+        store.addCredentials(domain, sshKey)
+      args:
+        private_key: "{{ slave_key.stdout }}"
+      user: admin
+      password: "{{ adminpwd.stdout }}"
+
+  - name: configure slave node
+    jenkins_script:
+      script: |
+        import jenkins.model.*
+        import hudson.security.*
+        import hudson.slaves.*
+        import hudson.plugins.sshslaves.*
+        import hudson.plugins.sshslaves.verifiers.*
+        import hudson.model.*
+          
+        SLAVE_IP_ADDR="${private_ip}"
+        SLAVE_CREDENTIALS="slave-ssh-key-id"
+
+        SLAVE_NODE_LABEL="wagtail-node"
+
+
+        println "create a slave node.. \n\r"
+        Slave slave_node = new DumbSlave(
+        "Wagtail-slave-node",
+        "This is slave node for provision wagtail app",
+        "/home/ec2-user",
+        "1",
+        Node.Mode.EXCLUSIVE,
+        SLAVE_NODE_LABEL,
+        new SSHLauncher (SLAVE_IP_ADDR, 22, SLAVE_CREDENTIALS, "", "", "", "", 0, 3, 30, new ManuallyTrustedKeyVerificationStrategy(false)),
+        new RetentionStrategy.Always(),
+        new LinkedList()
+        )
+        Jenkins.instance.addNode(slave_node)
+      args:
+        private_ip: '{{ slave_ip.stdout }}'
+      user: admin
+      password: "{{ adminpwd.stdout }}"
+
   - name: install lib
-    shell: easy_install python-jenkins
+    shell: pip3 install python-jenkins
 
   - name: create job for deploy wagtail infra
     jenkins_job:
       config: "{{ lookup('file', '/home/vlad/project/Jenkins-AWS-server/wagtail-apply.xml') }}"
       name: Wagtail-provision-infra
       password: "123"
-      url: http://{{ jenkins_ip }}:8080
+      url: http://jenkins.vln.ink
       user: jenkins

@@ -1,2 +1,4 @@
-[prod_servers]
-15.222.15.140
+[master_server]
+3.99.141.124
+[slave_server]
+15.222.236.237
