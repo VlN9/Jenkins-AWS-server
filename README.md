@@ -24,7 +24,7 @@ git clone git@github.com:VlN9/Jenkins-AWS-server.git
 ```
 cd Jenkins-AWS-server
 ```
-  * Also you need to configure prod.tfvars file because you need add your own DNS name and other little details.
+  * Also you need to configure jenkins.tfvars and ansible/prod.tfvars file because you need add your own DNS name and other little details.
   * Preform terraform command
 ```
 terraform apply -auto-approve -var-file=jenkins.tfvars
