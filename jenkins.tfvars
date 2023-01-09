@@ -42,3 +42,5 @@ home_path = "/home/vlad"
 slave_key = "slave-ca-central-1.pem"
 
 wagtail_key = "client_key-ca-central-1.pem"
+
+zone_name = "vln.ink"

@@ -63,7 +63,7 @@ resource "aws_lb_listener" "wagtail_lb_listener" {
 }
 #==========Route53=Record======================================================
 resource "aws_route53_record" "wagtail" {
-  zone_id = data.aws_route53_zone.vln.id
+  zone_id = data.aws_route53_zone.main_zone.id
   name    = var.common_tags["Environment"] == "prod" ? "jenkins" : "jenkins-${var.common_tags["Environment"]}"
   type    = "A"
 

@@ -19,7 +19,7 @@ data "aws_subnets" "default" {}
 
 data "aws_vpc" "default" {}
 
-data "aws_route53_zone" "vln" {
-  name         = "vln.ink"
+data "aws_route53_zone" "main_zone" {
+  name         = var.zone_name
   private_zone = false
 }

@@ -92,6 +92,11 @@ variable "slave_key" {
 }
 
 variable "wagtail_key" {
-  type = string
+  type    = string
   default = "keey.pem"
+}
+
+variable "zone_name" {
+  typpe   = string
+  default = "example.com"
 }

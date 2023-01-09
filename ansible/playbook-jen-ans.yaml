@@ -75,6 +75,12 @@
         copy: src={{ home_path }}/.ssh/{{ wagtail_key }} dest=/home/ec2-user/.ssh/client_key.pem mode=0600
         become: true
         become_user: ec2-user
+
+      - name: copy tfvars file in server
+        copy: src=prod.tfvars dest=~/prod.tfvars
+        become: true
+        become_user: ec2-user
+
     delegate_to: "{{ groups['slave_server'][0] }}"
 
   - block: #==========Kubernetes-Slave Configuration==========#
