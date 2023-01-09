@@ -1,3 +1,7 @@
+aws_region = "ca-central-1"
+
+key_pair_name = "vln-key-ca-central-1"
+
 sg_cidr_rule = [
   {
     description = "SSH ingress rule for me"
@@ -32,3 +36,9 @@ sg_cidr_rule = [
     cidr_blocks = ["0.0.0.0/0"]
   }
 ]
+
+home_path = "/home/vlad"
+
+slave_key = "slave-ca-central-1.pem"
+
+wagtail_key = "client_key-ca-central-1.pem"

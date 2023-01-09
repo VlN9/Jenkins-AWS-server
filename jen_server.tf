@@ -68,6 +68,7 @@ resource "aws_security_group_rule" "another_sg_rule_for_jen_sg" {
 }
 #################################Slaves Jenkins##################################
 resource "aws_instance" "slave_server" {
+  count                  = 2
   ami                    = data.aws_ami.latest_amazon_linux.id
   instance_type          = var.instance_type
   vpc_security_group_ids = [aws_security_group.slave_sg.id]

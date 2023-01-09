@@ -80,3 +80,18 @@ variable "health_check_interval" {
   type    = number
   default = 5
 }
+
+variable "home_path" {
+  type    = string
+  default = "/home"
+}
+
+variable "slave_key" {
+  type    = string
+  default = "key.pem"
+}
+
+variable "wagtail_key" {
+  type = string
+  default = "keey.pem"
+}

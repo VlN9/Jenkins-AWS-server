@@ -8,19 +8,29 @@
     register: adminpwd
 
   - name: read ssh key for git
-    shell: cat /home/vlad/.ssh/id_rsa
+    shell: cat {{ home_path }}/.ssh/id_rsa
     register: private_key
     delegate_to: 127.0.0.1
     become: true
     become_user: vlad
 
-  - name: read ssh key for slave
-    shell: cat /var/lib/jenkins/.ssh/slave-ca-central-1.pem
-    register: slave_key
+  - name: read ssh key for git
+    shell: cat {{ home_path }}/.ssh/{{ slave_key }}
+    register: slave_jenkins_key
+    delegate_to: 127.0.0.1
+    become: true
+    become_user: vlad
 
-  - name: read slave ip
-    shell: cat /home/vlad/project/Jenkins-AWS-server/ansible/prvt_ip
-    register: slave_ip
+  - name: read slave ip for wagtail 
+    shell: cat ./prvt_wgt_ip
+    register: slave_wgt_ip
+    delegate_to: 127.0.0.1
+    become: true
+    become_user: vlad
+
+  - name: read slave ip for k8s
+    shell: cat ./prvt_k8s_ip
+    register: slave_k8s_ip
     delegate_to: 127.0.0.1
     become: true
     become_user: vlad
@@ -210,11 +220,45 @@
 
         store.addCredentials(domain, sshKey)
       args:
-        private_key: "{{ slave_key.stdout }}"
+        private_key: "{{ slave_jenkins_key.stdout }}"
       user: admin
       password: "{{ adminpwd.stdout }}"
 
-  - name: configure slave node
+  - name: configure slave node for k8s
+    jenkins_script:
+      script: |
+        import jenkins.model.*
+        import hudson.security.*
+        import hudson.slaves.* 
+        import hudson.plugins.sshslaves.*
+        import hudson.plugins.sshslaves.verifiers.*
+        import hudson.model.*
+          
+        SLAVE_IP_ADDR="${private_ip}"
+        SLAVE_CREDENTIALS="slave-ssh-key-id"
+
+        SLAVE_NODE_LABEL="k8s-node"
+
+
+        println "create a slave node.. \n\r"
+        Slave slave_node = new DumbSlave(
+        "Kubernetes-slave-node",
+        "This is slave node for provision K8s app",
+        "/home/ec2-user",
+        "1",
+        Node.Mode.EXCLUSIVE,
+        SLAVE_NODE_LABEL,
+        new SSHLauncher (SLAVE_IP_ADDR, 22, SLAVE_CREDENTIALS, "", "", "", "", 0, 3, 30, new ManuallyTrustedKeyVerificationStrategy(false)),
+        new RetentionStrategy.Always(),
+        new LinkedList()
+        )
+        Jenkins.instance.addNode(slave_node)
+      args:
+        private_ip: '{{ slave_k8s_ip.stdout }}'
+      user: admin
+      password: "{{ adminpwd.stdout }}"
+
+  - name: configure slave node for wagtail
     jenkins_script:
       script: |
         import jenkins.model.*
@@ -244,7 +288,7 @@
         )
         Jenkins.instance.addNode(slave_node)
       args:
-        private_ip: '{{ slave_ip.stdout }}'
+        private_ip: '{{ slave_wgt_ip.stdout }}'
       user: admin
       password: "{{ adminpwd.stdout }}"
 
@@ -255,6 +299,14 @@
     jenkins_job:
       config: "{{ lookup('file', '/home/vlad/project/Jenkins-AWS-server/wagtail-apply.xml') }}"
       name: Wagtail-provision-infra
+      password: "123"
+      url: http://jenkins.vln.ink
+      user: jenkins
+
+  - name: create job for deploy k8s project
+    jenkins_job:
+      config: "{{ lookup('file', '/home/vlad/project/Jenkins-AWS-server/k8s-provision.xml') }}"
+      name: K8s-provision
       password: "123"
       url: http://jenkins.vln.ink
       user: jenkins
