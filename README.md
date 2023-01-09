@@ -1,8 +1,8 @@
 # Jenkins project
 ## About the project
   The project provisioning Jenkins master server and his two slave nodes by using Terraform. Then it installs Jenkins and all needed utilities on the master and the slave servers, starts the Jenkins service, configures credentials for GitHub and slaves, adds slave agents, and creates two jobs from files using Ansible.
-  * The first job is for provisioning the Wagtail project from this GitHub account.
-  * The second job is for provisioning the Kubernetes project from this GitHub Account.
+  * The first job is for provisioning the Wagtail project from this GitHub account. [Wagtail-infra](https://github.com/VlN9/Wagtail-AWS-terraform), [wagtail-app](https://github.com/VlN9/Wagtail-web)
+  * The second job is for provisioning the Kubernetes project from this GitHub Account. [K8s-project](https://github.com/VlN9/aws-k8s-cluster)
 ## What do you need to deploy 
   * Linux server
   * [Git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
